@@ -30,7 +30,7 @@ module Tabletastic
         @table_fields = args.empty? ? orm_fields : args.collect {|f| TableField.new(f.to_sym)}
       end
       action_cells(options[:actions], options[:action_prefix])
-      ["\n", head, "\n", body, "\n"].join("").html_safe
+      ["\n", head, "\n", body(options), "\n"].join("").html_safe
     end
 
     # individually specify a column, which will build up the header,
@@ -74,11 +74,26 @@ module Tabletastic
       end
     end
 
-    def body
+    def body(options)
       content_tag(:tbody) do
         @collection.inject("\n") do |rows, record|
-          rowclass = @template.cycle("odd","even")
-          rows += @template.content_tag_for(:tr, record, :class => rowclass) do
+          row_html = {}
+          row_html[:class] = @template.cycle("odd", "even")
+
+          if options.has_key?(:row_html)
+            custom_html = options[:row_html]
+
+            if should_add_row_html?(custom_html, record)
+
+              # :class html needs to be appended
+              if custom_html.has_key?(:class)
+                row_html[:class] += " " + custom_html.delete(:class)
+              end
+
+              row_html.merge!(custom_html)
+            end
+          end
+          rows += @template.content_tag_for(:tr, record, row_html) do
             cells_for_row(record)
           end + "\n"
         end.html_safe
@@ -164,6 +179,11 @@ module Tabletastic
 
     def link_title(action)
       I18n.translate(action, :scope => "tabletastic.actions", :default => action.to_s.titleize)
+    end
+
+    def should_add_row_html?(options, record) #:nodoc:
+      [options.delete(:if)].flatten.compact.all? { |m| record.send(m) } &&
+        ![options.delete(:unless)].flatten.compact.any? { |m| record.send(m) }
     end
   end
 end

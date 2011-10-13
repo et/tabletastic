@@ -8,6 +8,7 @@ describe Tabletastic::TableBuilder do
     ::Post.stub!(:content_columns).and_return([mock('column', :name => 'title'), mock('column', :name => 'body'), mock('column', :name => 'created_at')])
     @post.stub!(:title).and_return("The title of the post")
     @post.stub!(:body).and_return("Lorem ipsum")
+    @post.stub!(:censored?).and_return(true)
     @post.stub!(:created_at).and_return(Time.now)
     @post.stub!(:id).and_return(2)
     @posts = [@post]
@@ -89,6 +90,43 @@ describe Tabletastic::TableBuilder do
           ::Author.stub!(:reflect_on_all_associations).with(:has_one).and_return([@mock_reflection_has_one_profile])
           concat table_for([@fred]) { |t| t.data }
           output_buffer.should have_table_with_tag("th", "Profile")
+        end
+      end
+    end
+
+    context "with options[:row_html]" do
+      context "without a condition" do
+        before do
+          concat(table_for(@posts) do |t|
+            t.data(:row_html => { :class => "foo" })
+          end)
+        end
+        subject { output_buffer }
+        it { should have_table_with_tag("tr.foo") }
+        it "should not apply to the header row" do
+          subject.should_not have_table_with_tag("th.foo")
+        end
+      end
+
+      context "with a condition" do
+        context "if" do
+          before do
+            concat(table_for(@posts) do |t|
+              t.data(:row_html => { :class => "censored", :if => :censored? })
+            end)
+          end
+          subject { output_buffer }
+          it { should have_table_with_tag("tr.censored") }
+        end
+
+        context "unless" do
+          before do
+            concat(table_for(@posts) do |t|
+              t.data(:row_html => { :class => "censored", :unless => :censored? })
+            end)
+          end
+          subject { output_buffer }
+          it { should_not have_table_with_tag("tr.censored") }
         end
       end
     end

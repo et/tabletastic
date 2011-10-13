@@ -238,6 +238,41 @@ will product html like:
     </tbody>
   </table>
 
+To control the row's html, pass in a hash of html options.
+
+  <%= table_for(@posts) do |t|
+    t.data :row_html => { :class => "row_class" }
+  end %>
+
+  <table id="posts">
+    <thead>
+      <tr>
+        ...
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="post odd row_class" id="post_1">
+      <tr class="post odd row_class" id="post_2">
+      ...
+
+To apply conditional html to rows, use an additional +:if+ or +:unless+ option whose value is a boolean method applied to the  model.
+
+  <%= table_for(@posts) do |t|
+    t.data :row_html => { :class => "inactive", :if => :inactive? }
+  end %>
+
+  <table id="posts">
+    ...
+    <tbody>
+      <tr class="post odd inactive" id="post_1">
+      <tr class="post odd" id="post_2">
+
+  class Post < ActiveRecord::Base
+    def inactive?
+      self.created_at < 5.days.ago
+    end
+  end
+
 
 If it _still_ isn't flexible enough for your needs, it might be time to return to static html/erb.
 
