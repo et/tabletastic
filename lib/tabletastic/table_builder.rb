@@ -78,21 +78,24 @@ module Tabletastic
       content_tag(:tbody) do
         @collection.inject("\n") do |rows, record|
           row_html = {}
-          row_html[:class] = @template.cycle("odd", "even")
+
+          cycle_class = @template.cycle("odd", "even")
 
           if options.has_key?(:row_html)
             custom_html = options[:row_html]
 
             if should_add_row_html?(custom_html, record)
+              row_html.merge!(custom_html)
 
               # :class html needs to be appended
               if custom_html.has_key?(:class)
-                row_html[:class] += " " + custom_html.delete(:class)
+                row_html[:class] = cycle_class + " " + custom_html[:class]
               end
-
-              row_html.merge!(custom_html)
             end
+          else
+            row_html[:class] = cycle_class
           end
+
           rows += @template.content_tag_for(:tr, record, row_html) do
             cells_for_row(record)
           end + "\n"
